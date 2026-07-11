@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace EventDrivenArchitecturePlayground.Domain.Entities;
-
+ 
 /// <summary>
 /// Representa um evento armazenado no banco e pendente
 /// de publicação no RabbitMQ.
@@ -14,6 +14,10 @@ public sealed class OutboxMessage
 {
     private const int MaxEventTypeLength = 500;
     private const int MaxRoutingKeyLength = 255;
+
+    private OutboxMessage()
+    {
+    }
 
     private OutboxMessage(
         Guid id,
