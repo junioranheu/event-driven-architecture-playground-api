@@ -13,4 +13,4 @@ public sealed record CreateExpenseResult(
     Guid Id,
     string Item,
     decimal Amount,
-    DateTimeOffset OccurredAt);
+    DateTime OccurredAt);

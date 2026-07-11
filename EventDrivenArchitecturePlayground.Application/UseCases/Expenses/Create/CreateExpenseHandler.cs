@@ -51,7 +51,7 @@ public sealed class CreateExpenseHandler(
             expense,
             cancellationToken);
 
-        DateTimeOffset eventOccurredOnUtc = DateTimeOffset.UtcNow;
+        DateTime eventOccurredOnUtc = DateTime.UtcNow;
 
         ExpenseCreatedIntegrationEvent integrationEvent = new(
             EventId: Guid.NewGuid(),

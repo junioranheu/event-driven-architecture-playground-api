@@ -7,9 +7,16 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.3.11" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.9" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.9" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\EventDrivenArchitecturePlayground.Application\EventDrivenArchitecturePlayground.Application.csproj" />
     <ProjectReference Include="..\EventDrivenArchitecturePlayground.Contracts\EventDrivenArchitecturePlayground.Contracts.csproj" />
     <ProjectReference Include="..\EventDrivenArchitecturePlayground.Domain\EventDrivenArchitecturePlayground.Domain.csproj" />
+    <ProjectReference Include="..\EventDrivenArchitecturePlayground.Utils\EventDrivenArchitecturePlayground.Utils.csproj" />
   </ItemGroup>
 
 </Project>

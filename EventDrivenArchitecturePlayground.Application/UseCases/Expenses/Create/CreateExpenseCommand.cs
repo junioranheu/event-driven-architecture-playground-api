@@ -11,4 +11,4 @@
 public sealed record CreateExpenseCommand(
     string Item,
     decimal Amount,
-    DateTimeOffset OccurredAt);
+    DateTime OccurredAt);

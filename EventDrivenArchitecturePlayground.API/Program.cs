@@ -1,13 +1,15 @@
-var builder = WebApplication.CreateBuilder(args);
+using EventDrivenArchitecturePlayground.API;
 
-builder.Services.AddControllers();
+WebApplicationBuilder builder =
+    WebApplication.CreateBuilder(args);
 
-var app = builder.Build();
+builder.Services.
+    AddApplication().
+    AddInfrastructure(builder.Configuration).
+    AddPresentation();
 
-app.UseHttpsRedirection();
+WebApplication app = builder.Build();
 
-app.UseAuthorization();
-
-app.MapControllers();
+app.UsePresentation();
 
 app.Run();

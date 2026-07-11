@@ -32,8 +32,8 @@ public sealed record ExpenseCreatedIntegrationEvent(
     Guid ExpenseId,
     string Item,
     decimal Amount,
-    DateTimeOffset ExpenseOccurredAt,
-    DateTimeOffset OccurredOnUtc) : IIntegrationEvent
+    DateTime ExpenseOccurredAt,
+    DateTime OccurredOnUtc) : IIntegrationEvent
 {
     /// <summary>
     /// Routing key utilizada para identificar a versão deste evento no RabbitMQ.

@@ -28,7 +28,7 @@ public sealed class Expense : Audit
         Guid id,
         string item,
         decimal amount,
-        DateTimeOffset occurredAt)
+        DateTime occurredAt)
     {
         Id = id;
         Item = item;
@@ -43,7 +43,7 @@ public sealed class Expense : Audit
     /// Obtém a data e hora em que a despesa ocorreu,
     /// incluindo a informação de deslocamento do fuso horário.
     /// </summary>
-    public DateTimeOffset OccurredAt { get; private set; }
+    public DateTime OccurredAt { get; private set; }
 
     /// <summary>
     /// Cria uma nova despesa aplicando todas as regras de negócio necessárias.
@@ -58,7 +58,7 @@ public sealed class Expense : Audit
     public static Expense Create(
         string item,
         decimal amount,
-        DateTimeOffset occurredAt)
+        DateTime occurredAt)
     {
         string normalizedItem = item?.Trim() ?? string.Empty;
 
