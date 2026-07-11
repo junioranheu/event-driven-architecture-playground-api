@@ -7,7 +7,7 @@
 /// <param name="Item">Nome ou descrição do item.</param>
 /// <param name="Amount">Valor monetário registrado.</param>
 /// <param name="OccurredAt">Data e hora em que a despesa ocorreu.</param>
-/// Data e hora UTC em que o registro foi criado.
+/// Data e hora em que o registro foi criado.
 /// </param>
 public sealed record CreateExpenseResult(
     Guid Id,

@@ -20,9 +20,12 @@ public interface IOutboxStore
     /// Este método apenas registra o evento no armazenamento do Outbox.
     /// A publicação no broker é realizada posteriormente pelo processador
     /// do Outbox.
-    /// </summary>
+    /// 
     /// <param name="integrationEvent">
     /// Evento de integração que deverá ser persistido para publicação futura.
     /// </param>
-    void Add(IIntegrationEvent integrationEvent);
+    /// <param name="routingKey">
+    /// Rota de publicação do evento no broker.
+    /// </param>
+    void Add(IIntegrationEvent integrationEvent, string routingKey);
 }

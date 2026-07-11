@@ -13,6 +13,7 @@
   <ItemGroup>
     <ProjectReference Include="..\EventDrivenArchitecturePlayground.Contracts\EventDrivenArchitecturePlayground.Contracts.csproj" />
     <ProjectReference Include="..\EventDrivenArchitecturePlayground.Domain\EventDrivenArchitecturePlayground.Domain.csproj" />
+    <ProjectReference Include="..\EventDrivenArchitecturePlayground.Utils\EventDrivenArchitecturePlayground.Utils.csproj" />
   </ItemGroup>
 
 </Project>

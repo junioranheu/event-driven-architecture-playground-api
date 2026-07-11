@@ -3,6 +3,7 @@ using EventDrivenArchitecturePlayground.Application.Abstractions.Persistence;
 using EventDrivenArchitecturePlayground.Contracts.Events;
 using EventDrivenArchitecturePlayground.Domain.Entities;
 using EventDrivenArchitecturePlayground.Domain.Repositories;
+using static EventDrivenArchitecturePlayground.Utils.Fixtures.Get;
 
 namespace EventDrivenArchitecturePlayground.Application.UseCases.Expenses.Create;
 
@@ -51,7 +52,7 @@ public sealed class CreateExpenseHandler(
             expense,
             cancellationToken);
 
-        DateTime eventOccurredOnUtc = DateTime.UtcNow;
+        DateTime eventOccurredOn = GetDate();
 
         ExpenseCreatedIntegrationEvent integrationEvent = new(
             EventId: Guid.NewGuid(),
@@ -59,9 +60,11 @@ public sealed class CreateExpenseHandler(
             Item: expense.Item,
             Amount: expense.Amount,
             ExpenseOccurredAt: expense.OccurredAt,
-            OccurredOnUtc: eventOccurredOnUtc);
+            OccurredOn: eventOccurredOn);
 
-        _outboxStore.Add(integrationEvent);
+        _outboxStore.Add(
+            integrationEvent,
+            routingKey: ExpenseCreatedIntegrationEvent.RoutingKey);
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 

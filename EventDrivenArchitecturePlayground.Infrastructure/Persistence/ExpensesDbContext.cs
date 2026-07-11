@@ -14,15 +14,12 @@ namespace EventDrivenArchitecturePlayground.Infrastructure.Persistence;
 /// </summary>
 public sealed class ExpensesDbContext(DbContextOptions<ExpensesDbContext> options, IHttpContextAccessor httpContextAccessor) : DbContext(options), IUnitOfWork
 {
+    public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
     public DbSet<Expense> Expenses => Set<Expense>();
 
     #region extras
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        #region entity_configurations
-        modelBuilder.ApplyConfigurationsFromAssembly(typeof(ExpensesDbContext).Assembly);
-        #endregion
-
         #region delete_behavior
         foreach (var relationship in modelBuilder.Model.GetEntityTypes().SelectMany(e => e.GetForeignKeys()))
         {

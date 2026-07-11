@@ -1,10 +1,17 @@
 ﻿using EventDrivenArchitecturePlayground.Domain.Exceptions;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Xml.Linq;
 
 namespace EventDrivenArchitecturePlayground.Domain.Entities;
 
 /// <summary>
 /// Representa uma despesa registrada pelo usuário.
 /// </summary>
+/// [Table("expenses")]
+[Index(nameof(OccurredAt), Name = "ix_expenses_occurred_at")]
 public sealed class Expense : Audit
 {
     /// <summary>
@@ -21,9 +28,6 @@ public sealed class Expense : Audit
     /// <param name="occurredAt">
     /// Data e hora em que a despesa ocorreu.
     /// </param>
-    /// <param name="createdAtUtc">
-    /// Data e hora UTC em que o registro foi criado no sistema.
-    /// </param>
     private Expense(
         Guid id,
         string item,
@@ -36,13 +40,21 @@ public sealed class Expense : Audit
         OccurredAt = occurredAt;
     }
 
+    [Required]
+    [MaxLength(MaxItemLength)]
+    [Column("item")]
     public string Item { get; private set; } = string.Empty;
+
+    [Required]
+    [Column("amount", TypeName = "numeric(18,2)")]
     public decimal Amount { get; private set; }
 
     /// <summary>
     /// Obtém a data e hora em que a despesa ocorreu,
     /// incluindo a informação de deslocamento do fuso horário.
     /// </summary>
+    ///     [Required]
+    [Column("occurred_at")]
     public DateTime OccurredAt { get; private set; }
 
     /// <summary>

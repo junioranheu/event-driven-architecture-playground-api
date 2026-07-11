@@ -1,6 +1,7 @@
 ﻿using EventDrivenArchitecturePlayground.Application.Abstractions.Messaging;
 using EventDrivenArchitecturePlayground.Application.Abstractions.Persistence;
 using EventDrivenArchitecturePlayground.Domain.Repositories;
+using EventDrivenArchitecturePlayground.Infrastructure.Messaging.Outbox;
 using EventDrivenArchitecturePlayground.Infrastructure.Messaging.RabbitMq;
 using EventDrivenArchitecturePlayground.Infrastructure.Persistence;
 using EventDrivenArchitecturePlayground.Infrastructure.Repositories;
@@ -78,7 +79,7 @@ public static class DependencyInjection
     /// </summary>
     private static void AddMessaging(IServiceCollection services)
     {
-        services.AddScoped<IOutboxStore>();
+        services.AddScoped<IOutboxStore, OutboxStore>();
     }
 
     /// <summary>

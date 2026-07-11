@@ -1,7 +1,13 @@
-﻿namespace EventDrivenArchitecturePlayground.Domain.Entities;
+﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace EventDrivenArchitecturePlayground.Domain.Entities;
 
 public abstract class Audit
 {
+    [Key]
+    [Column("id")]
+    [DatabaseGenerated(DatabaseGeneratedOption.None)]
     public Guid Id { get; set; }
 
     public DateTime? CreatedDate { get; set; }

@@ -28,7 +28,7 @@ public sealed class ExpenseRepository(ExpensesDbContext dbContext) : IExpenseRep
     {
         List<Expense> expenses = await _dbContext.Expenses.
             AsNoTracking().
-            Where(x => x.OccurredAt >= startDate.ToUniversalTime() && x.OccurredAt < endDate.ToUniversalTime()).
+            Where(x => x.OccurredAt >= startDate && x.OccurredAt < endDate).
             OrderByDescending(expense => expense.OccurredAt).
             Skip(skip).
             Take(take).

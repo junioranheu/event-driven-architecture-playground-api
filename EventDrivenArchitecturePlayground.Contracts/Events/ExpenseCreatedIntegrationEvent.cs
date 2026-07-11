@@ -33,7 +33,7 @@ public sealed record ExpenseCreatedIntegrationEvent(
     string Item,
     decimal Amount,
     DateTime ExpenseOccurredAt,
-    DateTime OccurredOnUtc) : IIntegrationEvent
+    DateTime OccurredOn) : IIntegrationEvent
 {
     /// <summary>
     /// Routing key utilizada para identificar a versão deste evento no RabbitMQ.
