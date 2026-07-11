@@ -31,7 +31,8 @@ Principais benefícios:
 - Melhor distribuição de responsabilidades.
 - Maior escalabilidade.
 
-Um evento representa algo que já aconteceu. Por isso, normalmente usa nomes no passado, como:
+Um evento representa algo que já aconteceu. 
+Por isso, normalmente usa nomes no passado, como:
 
 - ExpenseCreated
 - PaymentConfirmed
@@ -59,15 +60,16 @@ Também existe o problema inverso:
 - O evento é publicado.
 - A gravação no banco falha.
 
-Os sistemas ficam inconsistentes.
+Os sistemas ficam inconsistentes!!!
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 
 3. O que é Outbox Pattern
 
-O Outbox Pattern resolve esse problema salvando o dado principal e o evento na mesma transação do banco.
+O Outbox Pattern resolve esse problema salvando o dado principal,
+e o evento na mesma transação do banco.
 
-No nosso caso:
+Nesse caso:
 
 - A despesa é adicionada à tabela expenses.
 - O evento é serializado e adicionado à tabela outbox_messages.
@@ -85,7 +87,8 @@ Se a transação funcionar, tanto a despesa quanto o evento ficam armazenados.
 
 4. Como o evento chega ao RabbitMQ
 
-Depois que a mensagem está na tabela outbox_messages, um BackgroundService executa periodicamente:
+Depois que a mensagem está na tabela outbox_messages, 
+um BackgroundService executa periodicamente:
 
 1. Busca mensagens ainda não processadas.
 2. Publica cada mensagem no RabbitMQ.
@@ -103,24 +106,21 @@ POST /api/expenses
     -> RabbitMQ
     -> Worker consumidor
 
-Se o RabbitMQ estiver indisponível, a mensagem continua no banco e pode ser publicada depois.
+Se o RabbitMQ estiver indisponível, 
+a mensagem continua no banco e pode ser publicada depois.
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 
 5. Responsabilidade de cada classe
 
-IOutboxStore
-
+IOutboxStore:
 Contrato usado pela camada Application para armazenar eventos sem conhecer PostgreSQL, Entity Framework ou RabbitMQ.
 
-OutboxStore
-
+OutboxStore:
 Implementação na Infrastructure. Serializa o evento e adiciona um OutboxMessage ao DbContext.
 
-OutboxMessage
-
+OutboxMessage:
 Representa o evento pendente no banco. Guarda informações como:
-
 - identificador do evento;
 - tipo do evento;
 - routing key;
@@ -130,16 +130,13 @@ Representa o evento pendente no banco. Guarda informações como:
 - quantidade de tentativas;
 - último erro.
 
-BackgroundService do Outbox
-
+BackgroundService do Outbox:
 Busca mensagens pendentes e publica no RabbitMQ.
 
-RabbitMQ
-
+RabbitMQ:
 Entrega os eventos para as filas e consumidores interessados.
 
-Worker
-
+Worker:
 Consome o evento e executa uma ação independente, como atualizar o resumo mensal.
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
@@ -147,9 +144,8 @@ Consome o evento e executa uma ação independente, como atualizar o resumo mens
 6. Resumo
 
 Event-Driven Architecture:
-
 Um serviço publica fatos ocorridos e outros serviços reagem a esses eventos.
 
 Outbox Pattern:
-
-O dado principal e o evento são salvos juntos no banco, garantindo que o evento não seja perdido antes de ser publicado no RabbitMQ.
+O dado principal e o evento são salvos juntos no banco, 
+garantindo que o evento não seja perdido antes de ser publicado no RabbitMQ.
