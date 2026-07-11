@@ -12,10 +12,6 @@ public sealed class Expense : Audit
     /// </summary>
     private const int MaxItemLength = 150;
 
-    private Expense()
-    {
-    }
-
     /// <summary>
     /// Inicializa uma nova instância válida de <see cref="Expense"/>.
     /// </summary>
@@ -87,14 +83,12 @@ public sealed class Expense : Audit
     {
         if (string.IsNullOrWhiteSpace(item))
         {
-            throw new DomainException(
-                "The expense item is required.");
+            throw new DomainException("The expense item is required.");
         }
 
         if (item.Length > MaxItemLength)
         {
-            throw new DomainException(
-                $"The expense item must contain at most {MaxItemLength} characters.");
+            throw new DomainException($"The expense item must contain at most {MaxItemLength} characters.");
         }
     }
 
@@ -109,8 +103,7 @@ public sealed class Expense : Audit
     {
         if (amount <= 0)
         {
-            throw new DomainException(
-                "The expense amount must be greater than zero.");
+            throw new DomainException("The expense amount must be greater than zero.");
         }
     }
 }
