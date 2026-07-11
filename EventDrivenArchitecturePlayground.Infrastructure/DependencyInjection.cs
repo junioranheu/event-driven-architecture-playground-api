@@ -1,4 +1,5 @@
-﻿using EventDrivenArchitecturePlayground.Application.Abstractions.Persistence;
+﻿using EventDrivenArchitecturePlayground.Application.Abstractions.Messaging;
+using EventDrivenArchitecturePlayground.Application.Abstractions.Persistence;
 using EventDrivenArchitecturePlayground.Domain.Repositories;
 using EventDrivenArchitecturePlayground.Infrastructure.Messaging.RabbitMq;
 using EventDrivenArchitecturePlayground.Infrastructure.Persistence;
@@ -6,6 +7,8 @@ using EventDrivenArchitecturePlayground.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
+using Npgsql;
 
 namespace EventDrivenArchitecturePlayground.Infrastructure;
 
@@ -20,6 +23,7 @@ public static class DependencyInjection
         AddPersistence(services, configuration);
         AddRepositories(services);
         AddRabbitMqOptions(services, configuration);
+        AddMessaging(services);
 
         return services;
     }
@@ -29,20 +33,24 @@ public static class DependencyInjection
     /// </summary>
     private static void AddPersistence(IServiceCollection services, IConfiguration configuration)
     {
-        string connectionString = configuration.GetConnectionString("PostgreSql") ??
-            throw new InvalidOperationException("The PostgreSQL connection string was not configured.");
+        services.AddOptions<PostgreSqlOptions>().
+            Bind(configuration.GetSection(PostgreSqlOptions.SectionName)).
+            Validate(x => IsValidPostgreSqlConnectionString(x.ConnectionString), "PostgreSql:ConnectionString must be a valid PostgreSQL connection string.").
+            ValidateOnStart();
 
-        services.AddDbContext<ExpensesDbContext>(options =>
+        services.AddDbContext<ExpensesDbContext>((serviceProvider, dbContextOptions) =>
         {
-            options.UseNpgsql(
-                connectionString,
-                npgsqlOptions =>
+            PostgreSqlOptions postgreSqlOptions = serviceProvider.GetRequiredService<IOptions<PostgreSqlOptions>>().Value;
+
+            dbContextOptions.UseNpgsql(
+                connectionString: postgreSqlOptions.ConnectionString,
+                npgsqlOptionsAction: npgsqlOptions =>
                 {
                     npgsqlOptions.MigrationsAssembly(typeof(ExpensesDbContext).Assembly.FullName);
                 });
         });
 
-        services.AddScoped<IUnitOfWork>(serviceProvider => serviceProvider.GetRequiredService<ExpensesDbContext>());
+        services.AddScoped<IUnitOfWork>(x => x.GetRequiredService<ExpensesDbContext>());
     }
 
     /// <summary>
@@ -60,9 +68,42 @@ public static class DependencyInjection
     {
         services.AddOptions<RabbitMqOptions>().
             Bind(configuration.GetSection(RabbitMqOptions.SectionName)).
-            Validate(options => IsValidRabbitMqUrl(options.Url), "RabbitMQ:Url must be a valid amqp:// or amqps:// URL.").
-            Validate(options => !string.IsNullOrWhiteSpace(options.ExchangeName), "RabbitMQ:ExchangeName is required.").
+            Validate(x => IsValidRabbitMqUrl(x.Url), "RabbitMQ:Url must be a valid amqp:// or amqps:// URL.").
+            Validate(x => !string.IsNullOrWhiteSpace(x.ExchangeName), "RabbitMQ:ExchangeName is required.").
             ValidateOnStart();
+    }
+
+    /// <summary>
+    /// Registra os serviços relacionados à mensageria.
+    /// </summary>
+    private static void AddMessaging(IServiceCollection services)
+    {
+        services.AddScoped<IOutboxStore>();
+    }
+
+    /// <summary>
+    /// Verifica se a string de conexão possui os dados mínimos
+    /// necessários para conexão com o PostgreSQL.
+    /// </summary>
+    private static bool IsValidPostgreSqlConnectionString(string connectionString)
+    {
+        if (string.IsNullOrWhiteSpace(connectionString))
+        {
+            return false;
+        }
+
+        try
+        {
+            NpgsqlConnectionStringBuilder builder = new(connectionString);
+
+            return !string.IsNullOrWhiteSpace(builder.Host) && 
+                !string.IsNullOrWhiteSpace(builder.Database) && 
+                !string.IsNullOrWhiteSpace(builder.Username);
+        }
+        catch (ArgumentException)
+        {
+            return false;
+        }
     }
 
     /// <summary>
