@@ -1,0 +1,155 @@
+﻿=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+
+EVENT-DRIVEN ARCHITECTURE & OUTBOX PATTERN
+
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+
+1. O que é arquitetura orientada a eventos
+
+Em uma arquitetura orientada a eventos, 
+um serviço comunica que algo aconteceu publicando um evento.
+
+Exemplo:
+
+- A API registra uma despesa.
+- A API gera o evento ExpenseCreated.
+- O RabbitMQ entrega esse evento para os consumidores interessados.
+- Um Worker pode atualizar o resumo mensal.
+- Outro consumidor pode registrar auditoria ou enviar notificações.
+
+A API não precisa conhecer diretamente esses consumidores. Ela apenas informa o fato ocorrido.
+
+Fluxo simplificado:
+
+API -> Evento -> RabbitMQ -> Consumidores
+
+Principais benefícios:
+
+- Menor acoplamento entre serviços.
+- Processamento assíncrono.
+- Facilidade para adicionar novos consumidores.
+- Melhor distribuição de responsabilidades.
+- Maior escalabilidade.
+
+Um evento representa algo que já aconteceu. Por isso, normalmente usa nomes no passado, como:
+
+- ExpenseCreated
+- PaymentConfirmed
+- UserRegistered
+
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+
+2. Problema de salvar no banco e publicar no RabbitMQ
+
+Um fluxo simples poderia fazer:
+
+1. Salvar a despesa no PostgreSQL.
+2. Publicar o evento no RabbitMQ.
+
+Porém, existe um risco:
+
+- A despesa é salva.
+- O RabbitMQ fica indisponível.
+- O evento não é publicado.
+
+Nesse caso, o banco contém a despesa, mas os consumidores nunca ficam sabendo que ela foi criada.
+
+Também existe o problema inverso:
+
+- O evento é publicado.
+- A gravação no banco falha.
+
+Os sistemas ficam inconsistentes.
+
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+
+3. O que é Outbox Pattern
+
+O Outbox Pattern resolve esse problema salvando o dado principal e o evento na mesma transação do banco.
+
+No nosso caso:
+
+- A despesa é adicionada à tabela expenses.
+- O evento é serializado e adicionado à tabela outbox_messages.
+- Um único SaveChangesAsync confirma as duas operações.
+
+Fluxo:
+
+Expense + OutboxMessage -> mesma transação -> PostgreSQL
+
+Se a transação falhar, nada é salvo.
+
+Se a transação funcionar, tanto a despesa quanto o evento ficam armazenados.
+
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+
+4. Como o evento chega ao RabbitMQ
+
+Depois que a mensagem está na tabela outbox_messages, um BackgroundService executa periodicamente:
+
+1. Busca mensagens ainda não processadas.
+2. Publica cada mensagem no RabbitMQ.
+3. Marca a mensagem como processada quando a publicação funciona.
+4. Registra o erro e agenda uma nova tentativa quando a publicação falha.
+
+Fluxo completo:
+
+POST /api/expenses
+    -> CreateExpenseHandler
+    -> salva Expense
+    -> salva OutboxMessage
+    -> PostgreSQL
+    -> BackgroundService
+    -> RabbitMQ
+    -> Worker consumidor
+
+Se o RabbitMQ estiver indisponível, a mensagem continua no banco e pode ser publicada depois.
+
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+
+5. Responsabilidade de cada classe
+
+IOutboxStore
+
+Contrato usado pela camada Application para armazenar eventos sem conhecer PostgreSQL, Entity Framework ou RabbitMQ.
+
+OutboxStore
+
+Implementação na Infrastructure. Serializa o evento e adiciona um OutboxMessage ao DbContext.
+
+OutboxMessage
+
+Representa o evento pendente no banco. Guarda informações como:
+
+- identificador do evento;
+- tipo do evento;
+- routing key;
+- conteúdo JSON;
+- data de criação;
+- data de processamento;
+- quantidade de tentativas;
+- último erro.
+
+BackgroundService do Outbox
+
+Busca mensagens pendentes e publica no RabbitMQ.
+
+RabbitMQ
+
+Entrega os eventos para as filas e consumidores interessados.
+
+Worker
+
+Consome o evento e executa uma ação independente, como atualizar o resumo mensal.
+
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+
+6. Resumo
+
+Event-Driven Architecture:
+
+Um serviço publica fatos ocorridos e outros serviços reagem a esses eventos.
+
+Outbox Pattern:
+
+O dado principal e o evento são salvos juntos no banco, garantindo que o evento não seja perdido antes de ser publicado no RabbitMQ.
