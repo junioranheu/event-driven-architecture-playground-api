@@ -33,7 +33,6 @@ public sealed record ExpenseCreatedIntegrationEvent(
     string Item,
     decimal Amount,
     DateTimeOffset ExpenseOccurredAt,
-    DateTimeOffset ExpenseCreatedAtUtc,
     DateTimeOffset OccurredOnUtc) : IIntegrationEvent
 {
     /// <summary>
