@@ -1,0 +1,5 @@
+[Domain]
+Entidades e regras do negócio
+
+[Dependências do projeto]
+-

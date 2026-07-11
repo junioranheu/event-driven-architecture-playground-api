@@ -1,0 +1,5 @@
+[Contracts]
+Eventos compartilhados entre API e Worker
+
+[Dependências do projeto]
+-

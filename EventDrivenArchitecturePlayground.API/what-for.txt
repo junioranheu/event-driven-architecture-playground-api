@@ -1,0 +1,6 @@
+[API]
+Controllers e entrada HTTP
+
+[Dependências do projeto]
+Application
+Infrastructure

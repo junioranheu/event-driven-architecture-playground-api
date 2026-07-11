@@ -1,0 +1,6 @@
+[Application]
+Casos de uso, commands, handlers e interfaces
+
+[Dependências do projeto]
+Domain
+Contracts
