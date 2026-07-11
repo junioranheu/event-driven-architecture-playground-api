@@ -20,8 +20,8 @@ public sealed class ExpenseRepository(ExpensesDbContext dbContext) : IExpenseRep
     }
 
     public async Task<IReadOnlyCollection<Expense>> GetByPeriodAsync(
-        DateTimeOffset startDate,
-        DateTimeOffset endDate,
+        DateTime startDate,
+        DateTime endDate,
         int skip,
         int take,
         CancellationToken cancellationToken = default)

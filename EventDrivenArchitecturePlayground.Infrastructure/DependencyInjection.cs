@@ -3,6 +3,7 @@ using EventDrivenArchitecturePlayground.Domain.Repositories;
 using EventDrivenArchitecturePlayground.Infrastructure.Messaging.RabbitMq;
 using EventDrivenArchitecturePlayground.Infrastructure.Persistence;
 using EventDrivenArchitecturePlayground.Infrastructure.Repositories;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -28,7 +29,8 @@ public static class DependencyInjection
     /// </summary>
     private static void AddPersistence(IServiceCollection services, IConfiguration configuration)
     {
-        string connectionString = configuration.GetConnectionString("PostgreSql") ?? throw new InvalidOperationException("The PostgreSQL connection string was not configured.");
+        string connectionString = configuration.GetConnectionString("PostgreSql") ??
+            throw new InvalidOperationException("The PostgreSQL connection string was not configured.");
 
         services.AddDbContext<ExpensesDbContext>(options =>
         {
@@ -36,8 +38,7 @@ public static class DependencyInjection
                 connectionString,
                 npgsqlOptions =>
                 {
-                    npgsqlOptions.MigrationsAssembly(
-                        typeof(ExpensesDbContext).Assembly.FullName);
+                    npgsqlOptions.MigrationsAssembly(typeof(ExpensesDbContext).Assembly.FullName);
                 });
         });
 

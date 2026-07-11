@@ -1,7 +1,8 @@
 using EventDrivenArchitecturePlayground.API;
+using EventDrivenArchitecturePlayground.Application;
+using EventDrivenArchitecturePlayground.Infrastructure;
 
-WebApplicationBuilder builder =
-    WebApplication.CreateBuilder(args);
+WebApplicationBuilder builder =  WebApplication.CreateBuilder(args);
 
 builder.Services.
     AddApplication().

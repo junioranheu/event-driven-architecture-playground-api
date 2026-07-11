@@ -12,8 +12,10 @@ public static class DependencyInjection
         return services;
     }
 
+    #region extras
     private static void AddUseCases(IServiceCollection services)
     {
         services.AddScoped<CreateExpenseHandler>();
     }
+    #endregion
 }

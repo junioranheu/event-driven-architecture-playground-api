@@ -1,9 +1,5 @@
 ﻿namespace EventDrivenArchitecturePlayground.API;
 
-/// <summary>
-/// Centraliza a configuração dos serviços e middlewares
-/// pertencentes à camada de apresentação.
-/// </summary>
 public static class DependencyInjection
 {
     /// <summary>
@@ -11,29 +7,26 @@ public static class DependencyInjection
     /// </summary>
     public static IServiceCollection AddPresentation(this IServiceCollection services)
     {
+        // Permite acessar informações da requisição HTTP atual,
+        // como usuário autenticado, headers e IP.
+        //
+        // Outros serviços podem receber IHttpContextAccessor
+        // por injeção de dependência.
+        services.AddHttpContextAccessor();
+
+        // Registra o suporte a Controllers do ASP.NET Core,
+        // incluindo model binding, validação e respostas HTTP.
         services.AddControllers();
+
+        // Registra o API Explorer, usado para descobrir
+        // os endpoints disponíveis na aplicação.
+        //
+        // Essas informações são utilizadas pelo Swagger.
         services.AddEndpointsApiExplorer();
+
+        // Registra o gerador da documentação OpenAPI/Swagger.
         services.AddSwaggerGen();
 
         return services;
-    }
-
-    /// <summary>
-    /// Configura o pipeline HTTP da aplicação.
-    /// </summary>
-    public static WebApplication UsePresentation(this WebApplication app)
-    {
-        if (app.Environment.IsDevelopment())
-        {
-            app.UseSwagger();
-            app.UseSwaggerUI();
-        }
-
-        app.UseHttpsRedirection();
-        app.UseAuthorization();
-
-        app.MapControllers();
-
-        return app;
     }
 }
