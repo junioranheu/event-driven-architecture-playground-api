@@ -52,10 +52,11 @@ public sealed class OutboxPublisherBackgroundService(
         try
         {
             await using AsyncServiceScope scope = scopeFactory.CreateAsyncScope();
-
             OutboxProcessor processor = scope.ServiceProvider.GetRequiredService<OutboxProcessor>();
 
-            return await processor.ProcessAsync(cancellationToken);
+            int output = await processor.ProcessAsync(cancellationToken);
+
+            return output;
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
