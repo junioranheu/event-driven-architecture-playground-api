@@ -23,8 +23,17 @@ public sealed class OutboxPublisherBackgroundService(
         {
             while (!stoppingToken.IsCancellationRequested)
             {
-                await ProcessOutboxAsync(stoppingToken);
+                int messageCount = await ProcessOutboxAsync(stoppingToken);
 
+                // Quando o lote veio cheio, provavelmente ainda existem
+                // outras mensagens pendentes, então busca novamente sem esperar.
+                if (messageCount == _options.BatchSize)
+                {
+                    continue;
+                }
+
+                // Quando não existe outro lote completo, aguarda
+                // antes de consultar o PostgreSQL novamente.
                 await Task.Delay(TimeSpan.FromSeconds(_options.PollingIntervalSeconds), stoppingToken);
             }
         }
@@ -34,10 +43,11 @@ public sealed class OutboxPublisherBackgroundService(
         }
     }
 
+    #region extras
     /// <summary>
     /// Cria um escopo e executa o processador do Outbox.
     /// </summary>
-    private async Task ProcessOutboxAsync(CancellationToken cancellationToken)
+    private async Task<int> ProcessOutboxAsync(CancellationToken cancellationToken)
     {
         try
         {
@@ -45,7 +55,7 @@ public sealed class OutboxPublisherBackgroundService(
 
             OutboxProcessor processor = scope.ServiceProvider.GetRequiredService<OutboxProcessor>();
 
-            await processor.ProcessAsync(cancellationToken);
+            return await processor.ProcessAsync(cancellationToken);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -54,6 +64,8 @@ public sealed class OutboxPublisherBackgroundService(
         catch (Exception exception)
         {
             logger.LogError(exception, "An unexpected error occurred while processing the Outbox.");
+            return 0;
         }
     }
+    #endregion
 }

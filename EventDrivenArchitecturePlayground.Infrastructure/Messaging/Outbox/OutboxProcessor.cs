@@ -20,94 +20,102 @@ public sealed class OutboxProcessor(
     private readonly OutboxPublisherOptions _options = options.Value;
 
     /// <summary>
-    /// Processa um lote de mensagens pendentes.
+    /// Processa um lote de mensagens pendentes e retorna
+    /// a quantidade de mensagens encontradas.
     /// </summary>
-    public async Task ProcessAsync(CancellationToken cancellationToken = default)
+    public async Task<int> ProcessAsync(CancellationToken cancellationToken = default)
     {
-        // Busca um lote de mensagens pendentes no Outbox.
-        //
-        // Uma mensagem será selecionada quando:
-        // 1. Ainda não tiver sido processada com sucesso;
-        // 2. Nunca tiver falhado antes ou já tiver atingido
-        //    a data programada para uma nova tentativa.
-        //
-        // As mensagens mais antigas são processadas primeiro
-        // e a quantidade retornada é limitada pelo tamanho do lote configurado.
         List<OutboxMessage> messages = await dbContext.OutboxMessages.
             Where(x =>
                 x.ProcessedAt == null &&
-                (x.NextRetryAt == null || x.NextRetryAt <= GetDate())
-            ).
-            OrderBy(message => message.OccurredOn).
+                (
+                    x.NextRetryAt == null ||
+                    x.NextRetryAt <= GetDate()
+                )).
+            OrderBy(x => x.OccurredOn).
             Take(_options.BatchSize).
             ToListAsync(cancellationToken);
 
         if (messages.Count == 0)
         {
-            return;
+            return 0;
         }
 
         foreach (OutboxMessage message in messages)
         {
-            try
-            {
-                // Publica no RabbitMQ o conteúdo armazenado no Outbox,
-                // mantendo o identificador, o tipo do evento e a routing key
-                // originais da mensagem.
-                await rabbitMqPublisher.PublishAsync(
-                    message.Id,
-                    message.EventType,
-                    message.RoutingKey,
-                    message.Content,
-                    cancellationToken);
-
-                // Marca a mensagem como processada somente após
-                // a publicação ser concluída com sucesso.
-                message.MarkAsProcessed(GetDate());
-
-                // Persiste no banco a atualização do estado da mensagem,
-                // evitando que ela seja publicada novamente no próximo ciclo.
-                await dbContext.SaveChangesAsync(cancellationToken);
-
-                // logger.LogInformation("Outbox message {MessageId} processed successfully.", message.Id);
-            }
-            catch (OperationCanceledException)
-                when (cancellationToken.IsCancellationRequested)
-            {
-                throw;
-            }
-            catch (Exception exception)
-            {
-                // Calcula a data e hora da próxima tentativa
-                // com base na quantidade de falhas já registradas.
-                DateTime nextRetryAt = CalculateNextRetry(message.RetryCount);
-
-                // Registra a falha na mensagem, incrementa o número
-                // de tentativas e define quando ela poderá ser processada novamente.
-                message.MarkAsFailed(exception.Message, nextRetryAt);
-
-                // Persiste no PostgreSQL o erro, a nova contagem de tentativas
-                // e a data agendada para o próximo retry.
-                await dbContext.SaveChangesAsync(cancellationToken);
-
-                logger.LogError(exception, "Failed to publish outbox message {MessageId}. Next attempt at {NextRetryAtUtc}.", message.Id, nextRetryAt);
-            }
+            await ProcessMessageAsync(message, cancellationToken);
         }
+
+        return messages.Count;
     }
 
     #region extras
     /// <summary>
+    /// Publica e atualiza o estado de uma mensagem do Outbox.
+    /// </summary>
+    private async Task ProcessMessageAsync(OutboxMessage message, CancellationToken cancellationToken)
+    {
+        try
+        {
+            // Tenta publicar a mensagem no RabbitMQ.
+            await rabbitMqPublisher.PublishAsync(
+                messageId: message.Id,
+                eventType: message.EventType,
+                routingKey: message.RoutingKey,
+                content: message.Content,
+                cancellationToken: cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception exception)
+        {
+            await RegisterFailureAsync(message, exception, cancellationToken);
+            return;
+        }
+
+        // Só marca como processada quando a publicação
+        // no RabbitMQ foi concluída com sucesso.
+        message.MarkAsProcessed(GetDate());
+
+        // Uma falha neste SaveChanges não deve ser tratada
+        // como falha de publicação no RabbitMQ.
+        await dbContext.SaveChangesAsync(cancellationToken);
+
+        // logger.LogInformation("Outbox message {MessageId} processed successfully.", message.Id);
+    }
+
+    /// <summary>
+    /// Registra a falha de publicação e agenda uma nova tentativa.
+    /// </summary>
+    private async Task RegisterFailureAsync(OutboxMessage message, Exception exception, CancellationToken cancellationToken)
+    {
+        DateTime nextRetryAt = CalculateNextRetry(
+            currentRetryCount: message.RetryCount,
+            currentDate: GetDate());
+
+        message.MarkAsFailed(
+            error: exception.Message,
+            nextRetryAt);
+
+        await dbContext.SaveChangesAsync(cancellationToken);
+
+        logger.LogError(exception, "Failed to publish outbox message {MessageId}. Next attempt at {NextRetryAt}.", message.Id, nextRetryAt);
+    }
+
+    /// <summary>
     /// Calcula a próxima tentativa utilizando backoff exponencial.
     /// </summary>
-    private DateTime CalculateNextRetry(int currentRetryCount)
+    private DateTime CalculateNextRetry(int currentRetryCount, DateTime currentDate)
     {
-        int calculatedDelaySeconds = (int)Math.Pow(2, Math.Min(currentRetryCount + 1, 20));
+        int exponent = Math.Min(currentRetryCount + 1, 20);
+
+        int calculatedDelaySeconds = (int)Math.Pow(2, exponent);
 
         int delaySeconds = Math.Min(calculatedDelaySeconds, _options.MaxRetryDelaySeconds);
 
-        DateTime output = GetDate().AddSeconds(delaySeconds);
-
-        return output;
+        return currentDate.AddSeconds(delaySeconds);
     }
     #endregion
 }

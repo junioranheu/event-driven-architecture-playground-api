@@ -3,13 +3,12 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace EventDrivenArchitecturePlayground.Domain.Entities;
- 
+
 /// <summary>
-/// Representa um evento armazenado no banco e pendente
-/// de publicação no RabbitMQ.
+/// Representa um evento armazenado no banco e pendente de publicação no RabbitMQ.
 /// </summary>
-/// [Table("outbox_messages")]
-[Index(nameof(ProcessedAt), nameof(NextRetryAt), Name = "ix_outbox_messages_pending")]
+[Table("outbox_messages")]
+[Index(nameof(ProcessedAt), nameof(OccurredOn), Name = "ix_outbox_messages_processed_at_occurred_on")]
 public sealed class OutboxMessage
 {
     private const int MaxEventTypeLength = 500;
