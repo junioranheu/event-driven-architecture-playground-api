@@ -1,7 +1,0 @@
-[Worker]
-Consumidores dos eventos do RabbitMQ
-
-[Dependências do projeto]
-Application
-Infrastructure
-Contracts

@@ -25,7 +25,7 @@ public sealed class RabbitMqPublisher(IOptions<RabbitMqOptions> options, ILogger
     public async Task PublishAsync(
         Guid messageId,
         string eventType,
-        string routingKey, 
+        string routingKey,
         string content,
         CancellationToken cancellationToken = default)
     {
@@ -59,6 +59,16 @@ public sealed class RabbitMqPublisher(IOptions<RabbitMqOptions> options, ILogger
                 Persistent = true
             };
 
+            // Declara o exchange caso ele ainda não exista.
+            // Se já existir com a mesma configuração, apenas reutiliza.
+            await channel.ExchangeDeclareAsync(
+                exchange: _options.ExchangeName,
+                type: ExchangeType.Topic,
+                durable: true,
+                autoDelete: false,
+                arguments: null,
+                cancellationToken: cancellationToken);
+
             // Publica a mensagem e aguarda a confirmação do RabbitMQ.
             await channel.BasicPublishAsync(
                 exchange: _options.ExchangeName,
@@ -70,12 +80,13 @@ public sealed class RabbitMqPublisher(IOptions<RabbitMqOptions> options, ILogger
 
             // logger.LogInformation("Message {MessageId} published with routing key {RoutingKey}.", messageId, routingKey);
         }
-        catch
+        catch (Exception exception)
         {
+            logger.LogError(exception, "An error occurred while publishing message {MessageId} to RabbitMQ with routing key {RoutingKey}.", messageId, routingKey);
+
             // Descarta os recursos atuais para que uma nova conexão
             // seja criada na próxima tentativa do Outbox.
             await DisposeRabbitMqResourcesAsync();
-
             throw;
         }
         finally
@@ -84,6 +95,7 @@ public sealed class RabbitMqPublisher(IOptions<RabbitMqOptions> options, ILogger
         }
     }
 
+    #region extras
     /// <summary>
     /// Retorna o channel atual quando ele estiver aberto
     /// ou cria uma nova conexão, um novo channel e o exchange.
@@ -213,4 +225,5 @@ public sealed class RabbitMqPublisher(IOptions<RabbitMqOptions> options, ILogger
             _channelSemaphore.Dispose();
         }
     }
+    #endregion
 }

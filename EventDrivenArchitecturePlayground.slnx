@@ -5,5 +5,4 @@
   <Project Path="EventDrivenArchitecturePlayground.Domain/EventDrivenArchitecturePlayground.Domain.csproj" Id="4650e4f6-a9a1-4048-8f0a-3ab992264cc7" />
   <Project Path="EventDrivenArchitecturePlayground.Infrastructure/EventDrivenArchitecturePlayground.Infrastructure.csproj" Id="e69f4f73-ba91-490c-a227-f23b8b16a748" />
   <Project Path="EventDrivenArchitecturePlayground.Utils/EventDrivenArchitecturePlayground.Utils.csproj" Id="1a957c5c-9027-4fcb-a6c4-fb136e27eaa9" />
-  <Project Path="EventDrivenArchitecturePlayground.Worker/EventDrivenArchitecturePlayground.Worker.csproj" Id="72ba150d-4951-40be-99ec-91c74a351b83" />
 </Solution>

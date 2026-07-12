@@ -3,14 +3,13 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Xml.Linq;
 
 namespace EventDrivenArchitecturePlayground.Domain.Entities;
 
 /// <summary>
 /// Representa uma despesa registrada pelo usuário.
 /// </summary>
-/// [Table("expenses")]
+[Table("expenses")]
 [Index(nameof(OccurredAt), Name = "ix_expenses_occurred_at")]
 public sealed class Expense : Audit
 {
