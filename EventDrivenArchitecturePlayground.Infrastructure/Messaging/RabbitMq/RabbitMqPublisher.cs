@@ -25,7 +25,7 @@ public sealed class RabbitMqPublisher(IOptions<RabbitMqOptions> options, ILogger
     public async Task PublishAsync(
         Guid messageId,
         string eventType,
-        string routingKey,
+        string routingKey, 
         string content,
         CancellationToken cancellationToken = default)
     {
