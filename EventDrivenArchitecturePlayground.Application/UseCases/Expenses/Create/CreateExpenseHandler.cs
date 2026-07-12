@@ -52,15 +52,13 @@ public sealed class CreateExpenseHandler(
             expense,
             cancellationToken);
 
-        DateTime eventOccurredOn = GetDate();
-
         ExpenseCreatedIntegrationEvent integrationEvent = new(
             EventId: Guid.NewGuid(),
             ExpenseId: expense.Id,
             Item: expense.Item,
             Amount: expense.Amount,
             ExpenseOccurredAt: expense.OccurredAt,
-            OccurredOn: eventOccurredOn);
+            OccurredOn: GetDate());
 
         _outboxStore.Add(
             integrationEvent,
