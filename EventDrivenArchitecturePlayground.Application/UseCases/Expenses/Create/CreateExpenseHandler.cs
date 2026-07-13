@@ -43,15 +43,18 @@ public sealed class CreateExpenseHandler(
     {
         ArgumentNullException.ThrowIfNull(command);
 
+        // #3 - Cria a entidade de domínio (com validações).
         Expense expense = Expense.Create(
             command.Item,
             command.Amount,
             command.OccurredAt);
 
+        // #4 - Adiciona a entidade ao contexto de persistência.
         await _expenseRepository.AddAsync(
             expense,
             cancellationToken);
 
+        // 5 - Cria o evento de integração.
         ExpenseCreatedIntegrationEvent integrationEvent = new(
             EventId: Guid.NewGuid(),
             ExpenseId: expense.Id,
@@ -60,10 +63,12 @@ public sealed class CreateExpenseHandler(
             ExpenseOccurredAt: expense.OccurredAt,
             OccurredOn: GetDate());
 
+        // 6 - Adiciona o evento à Outbox.
         _outboxStore.Add(
             integrationEvent,
             routingKey: ExpenseCreatedIntegrationEvent.RoutingKey);
 
+        // 7 - Persiste as alterações.
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return new CreateExpenseResult(

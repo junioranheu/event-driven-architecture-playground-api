@@ -23,6 +23,7 @@ public sealed class OutboxPublisherBackgroundService(
         {
             while (!stoppingToken.IsCancellationRequested)
             {
+                // #9 - Processa as mensagens pendentes da Outbox e retorna a quantidade de mensagens publicadas.
                 int messageCount = await ProcessOutboxAsync(stoppingToken);
 
                 // Quando o lote veio cheio, provavelmente ainda existem
