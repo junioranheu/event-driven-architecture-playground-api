@@ -1,6 +1,7 @@
 <Solution>
   <Project Path="EventDrivenArchitecturePlayground.API/EventDrivenArchitecturePlayground.API.csproj" />
   <Project Path="EventDrivenArchitecturePlayground.Application/EventDrivenArchitecturePlayground.Application.csproj" Id="7d0fa6df-560d-40e0-873f-a0922abedc8b" />
+  <Project Path="EventDrivenArchitecturePlayground.ConsoleConsumer/EventDrivenArchitecturePlayground.ConsoleConsumer.csproj" Id="1889a838-f4e1-4fd8-9d59-1bcdf130c5d5" />
   <Project Path="EventDrivenArchitecturePlayground.Contracts/EventDrivenArchitecturePlayground.Contracts.csproj" Id="8eef451a-6f5d-4e1c-b8a1-1ea2d19158f4" />
   <Project Path="EventDrivenArchitecturePlayground.Domain/EventDrivenArchitecturePlayground.Domain.csproj" Id="4650e4f6-a9a1-4048-8f0a-3ab992264cc7" />
   <Project Path="EventDrivenArchitecturePlayground.Infrastructure/EventDrivenArchitecturePlayground.Infrastructure.csproj" Id="e69f4f73-ba91-490c-a227-f23b8b16a748" />
