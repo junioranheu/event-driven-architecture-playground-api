@@ -18,9 +18,8 @@ public sealed class ExpensesController(CreateExpenseHandler createExpenseHandler
             Amount: request.Amount,
             OccurredAt: request.OccurredAt);
 
-        CreateExpenseResult result =
-            await createExpenseHandler.HandleAsync(command, cancellationToken);
+        CreateExpenseResult result = await createExpenseHandler.HandleAsync(command, cancellationToken);
 
-        return CreatedAtAction(nameof(CreateAsync), new { id = result.Id }, result);
+        return Created(string.Empty, result);
     }
 }
