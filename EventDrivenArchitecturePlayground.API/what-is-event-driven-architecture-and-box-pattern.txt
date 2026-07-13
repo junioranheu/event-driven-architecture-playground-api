@@ -6,7 +6,7 @@ EVENT-DRIVEN ARCHITECTURE & OUTBOX PATTERN
 
 1. O que é arquitetura orientada a eventos
 
-Em uma arquitetura orientada a eventos, 
+Em uma arquitetura orientada a eventos,
 um serviço comunica que algo aconteceu publicando um evento.
 
 Exemplo:
@@ -14,10 +14,11 @@ Exemplo:
 - A API registra uma despesa.
 - A API gera o evento ExpenseCreated.
 - O RabbitMQ entrega esse evento para os consumidores interessados.
-- Um Worker pode atualizar o resumo mensal.
+- Um consumidor pode atualizar o resumo mensal.
 - Outro consumidor pode registrar auditoria ou enviar notificações.
 
-A API não precisa conhecer diretamente esses consumidores. Ela apenas informa o fato ocorrido.
+A API não precisa conhecer diretamente esses consumidores.
+Ela apenas informa o fato ocorrido.
 
 Fluxo simplificado:
 
@@ -31,7 +32,8 @@ Principais benefícios:
 - Melhor distribuição de responsabilidades.
 - Maior escalabilidade.
 
-Um evento representa algo que já aconteceu. 
+Um evento representa algo que já aconteceu.
+
 Por isso, normalmente usa nomes no passado, como:
 
 - ExpenseCreated
@@ -53,20 +55,23 @@ Porém, existe um risco:
 - O RabbitMQ fica indisponível.
 - O evento não é publicado.
 
-Nesse caso, o banco contém a despesa, mas os consumidores nunca ficam sabendo que ela foi criada.
+Nesse caso, o banco contém a despesa, mas os consumidores
+nunca ficam sabendo que ela foi criada.
 
 Também existe o problema inverso:
 
 - O evento é publicado.
 - A gravação no banco falha.
 
-Os sistemas ficam inconsistentes!!!
+Os sistemas ficam inconsistentes.
+
+Esse problema é conhecido como dual write.
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 
 3. O que é Outbox Pattern
 
-O Outbox Pattern resolve esse problema salvando o dado principal,
+O Outbox Pattern resolve esse problema salvando o dado principal
 e o evento na mesma transação do banco.
 
 Nesse caso:
@@ -81,17 +86,20 @@ Expense + OutboxMessage -> mesma transação -> PostgreSQL
 
 Se a transação falhar, nada é salvo.
 
-Se a transação funcionar, tanto a despesa quanto o evento ficam armazenados.
+Se a transação funcionar, tanto a despesa quanto o evento
+ficam armazenados.
+
+Nesse momento, o evento ainda não foi enviado ao RabbitMQ.
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 
 4. Como o evento chega ao RabbitMQ
 
-Depois que a mensagem está na tabela outbox_messages, 
-um BackgroundService executa periodicamente:
+Depois que a mensagem está na tabela outbox_messages,
+o OutboxPublisherBackgroundService executa periodicamente:
 
 1. Busca mensagens ainda não processadas.
-2. Publica cada mensagem no RabbitMQ.
+2. Publica cada mensagem no exchange do RabbitMQ.
 3. Marca a mensagem como processada quando a publicação funciona.
 4. Registra o erro e agenda uma nova tentativa quando a publicação falha.
 
@@ -102,25 +110,51 @@ POST /api/expenses
     -> salva Expense
     -> salva OutboxMessage
     -> PostgreSQL
-    -> BackgroundService
-    -> RabbitMQ
-    -> Worker consumidor
+    -> OutboxPublisherBackgroundService
+    -> RabbitMqPublisher
+    -> Exchange
+    -> Queue
+    -> Consumidor
 
-Se o RabbitMQ estiver indisponível, 
+Se o RabbitMQ estiver indisponível,
 a mensagem continua no banco e pode ser publicada depois.
+
+Para que a publicação funcione, deve existir uma fila vinculada
+ao exchange por meio de um binding compatível com a routing key.
+
+Exemplo:
+
+Exchange:
+expenses.events
+
+Routing key:
+expenses.expense-created.v1
+
+Sem uma fila e um binding compatível, o RabbitMQ retorna:
+
+312 NO_ROUTE
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 
 5. Responsabilidade de cada classe
 
 IOutboxStore:
-Contrato usado pela camada Application para armazenar eventos sem conhecer PostgreSQL, Entity Framework ou RabbitMQ.
+
+Contrato usado pela camada Application para armazenar eventos
+sem conhecer PostgreSQL, Entity Framework ou RabbitMQ.
 
 OutboxStore:
-Implementação na Infrastructure. Serializa o evento e adiciona um OutboxMessage ao DbContext.
+
+Implementação na Infrastructure.
+
+Serializa o evento e adiciona uma OutboxMessage ao DbContext.
 
 OutboxMessage:
-Representa o evento pendente no banco. Guarda informações como:
+
+Representa o evento pendente no banco.
+
+Guarda informações como:
+
 - identificador do evento;
 - tipo do evento;
 - routing key;
@@ -128,24 +162,65 @@ Representa o evento pendente no banco. Guarda informações como:
 - data de criação;
 - data de processamento;
 - quantidade de tentativas;
-- último erro.
+- último erro;
+- data da próxima tentativa.
 
-BackgroundService do Outbox:
-Busca mensagens pendentes e publica no RabbitMQ.
+OutboxPublisherBackgroundService:
+
+Executa periodicamente o processamento do Outbox.
+
+OutboxProcessor:
+
+Busca as mensagens pendentes, publica no RabbitMQ
+e registra sucesso ou falha.
+
+RabbitMqPublisher:
+
+Publica o conteúdo JSON da OutboxMessage
+no exchange configurado.
+
+RabbitMqConsumerHostedService:
+
+Roda junto com a aplicação.
+
+Declara a fila, cria o binding com o exchange,
+recebe as mensagens e executa o processamento.
 
 RabbitMQ:
-Entrega os eventos para as filas e consumidores interessados.
 
-Worker:
-Consome o evento e executa uma ação independente, como atualizar o resumo mensal.
+Recebe as mensagens no exchange e as encaminha
+para as filas de acordo com a routing key e os bindings.
+
+Queue:
+
+Mantém a mensagem até que um consumidor consiga processá-la.
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 
 6. Resumo
 
 Event-Driven Architecture:
-Um serviço publica fatos ocorridos e outros serviços reagem a esses eventos.
+
+Um serviço publica fatos ocorridos e outros componentes
+reagem a esses eventos.
 
 Outbox Pattern:
-O dado principal e o evento são salvos juntos no banco, 
-garantindo que o evento não seja perdido antes de ser publicado no RabbitMQ.
+
+O dado principal e o evento são salvos juntos no banco,
+garantindo que o evento não seja perdido antes de ser
+publicado no RabbitMQ.
+
+Fluxo atual:
+
+Expense + OutboxMessage
+    -> PostgreSQL
+    -> OutboxPublisherBackgroundService
+    -> RabbitMQ
+    -> RabbitMqConsumerHostedService
+
+O consumidor está dentro da própria aplicação.
+
+Ele poderia ser separado em outra API ou Worker no futuro,
+mas isso não é obrigatório para o projeto atual.
+
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=

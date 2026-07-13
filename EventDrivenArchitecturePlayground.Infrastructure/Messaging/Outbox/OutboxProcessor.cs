@@ -77,7 +77,7 @@ public sealed class OutboxProcessor(
 
         // Só marca como processada quando a publicação
         // no RabbitMQ foi concluída com sucesso.
-        message.MarkAsProcessed(GetDate());
+        message.MarkAsProcessed(processedAt: GetDate());
 
         // Uma falha neste SaveChanges não deve ser tratada
         // como falha de publicação no RabbitMQ.

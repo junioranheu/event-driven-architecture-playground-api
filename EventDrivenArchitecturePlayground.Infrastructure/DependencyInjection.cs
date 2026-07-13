@@ -111,8 +111,11 @@ public static class DependencyInjection
         // durante toda a vida da aplicação.
         services.AddSingleton<IRabbitMqPublisher, RabbitMqPublisher>();
 
-        // Executa continuamente em segundo plano buscando
-        // mensagens pendentes no Outbox para publicação.
+        // Cria a fila, o binding e inicia o consumidor
+        // antes do Outbox começar a publicar mensagens.
+        services.AddHostedService<RabbitMqConsumerHostedService>();
+
+        // Consulta o Outbox e publica mensagens pendentes.
         services.AddHostedService<OutboxPublisherBackgroundService>();
     }
 

@@ -19,4 +19,14 @@ public sealed class RabbitMqOptions
     /// Obtém o nome do exchange utilizado para publicar os eventos.
     /// </summary>
     public string ExchangeName { get; init; } = string.Empty;
+
+    /// <summary>
+    /// Obtém o nome da fila (queue) utilizada para receber as mensagens.
+    /// </summary>
+    public string QueueName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Obtém a chave de roteamento (binding key) utilizada para vincular a fila ao exchange.
+    /// </summary>
+    public string BindingKey { get; set; } = string.Empty;
 }
