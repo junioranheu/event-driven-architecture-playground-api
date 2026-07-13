@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using EventDrivenArchitecturePlayground.Contracts.Events;
+using Microsoft.Extensions.Configuration;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using System.Text;
@@ -10,14 +11,15 @@ IConfiguration configuration = new ConfigurationBuilder().AddUserSecrets<Program
 string rabbitMqUrl = configuration["RabbitMQ:Url"] ??
     throw new InvalidOperationException("RabbitMQ:Url was not configured in User Secrets.");
 
-const string exchangeName = "expenses.events";
+string rabbitMqExchangeName = configuration["RabbitMQ:ExchangeName"] ??
+    throw new InvalidOperationException("RabbitMQ:ExchangeName was not configured in User Secrets.");
 
 // Fila exclusiva deste Console App.
 // Não utilize o mesmo nome da fila consumida pela API.
 const string queueName = "event-driven-playground.console";
 
 // (!) Mesma key utilizada pelo publisher da API em ExpenseCreatedIntegrationEvent.
-const string bindingKey = "expenses.expense-created.v1";
+const string bindingKey = ExpenseCreatedIntegrationEvent.RoutingKey;
 
 ConnectionFactory connectionFactory = new()
 {
@@ -33,7 +35,7 @@ await using IChannel channel = await connection.CreateChannelAsync();
 
 // Garante que o mesmo exchange usado pelo publisher exista.
 await channel.ExchangeDeclareAsync(
-    exchange: exchangeName,
+    exchange: rabbitMqExchangeName,
     type: ExchangeType.Topic,
     durable: true,
     autoDelete: false,
@@ -50,7 +52,7 @@ await channel.QueueDeclareAsync(
 // Faz esta fila receber os eventos ExpenseCreated.
 await channel.QueueBindAsync(
     queue: queueName,
-    exchange: exchangeName,
+    exchange: rabbitMqExchangeName,
     routingKey: bindingKey,
     arguments: null);
 
