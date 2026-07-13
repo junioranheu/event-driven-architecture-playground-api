@@ -16,18 +16,18 @@ RabbitMQ
 Consumidores processam o evento
 ```
 
-A API não precisa conhecer quem vai consumir a mensagem.
+A API não precisa conhecer diretamente quem vai consumir a mensagem.
 
 ## O que é Outbox Pattern?
 
-Evita salvar a despesa no banco e perder o evento caso o RabbitMQ esteja indisponível.
+O Outbox Pattern evita que a aplicação salve a despesa no banco e perca o evento caso o RabbitMQ esteja indisponível.
 
 ```text
 Expense + OutboxMessage
         ↓
 Mesma transação no PostgreSQL
         ↓
-Um serviço publica depois no RabbitMQ
+BackgroundService publica depois no RabbitMQ
 ```
 
 Se a publicação falhar, a mensagem continua salva para uma nova tentativa.
@@ -39,7 +39,13 @@ Se a publicação falhar, a mensagem continua salva para uma nova tentativa.
 - Repository Pattern
 - Unit of Work
 - Outbox Pattern
+- Processamento do Outbox em segundo plano
+- Retry com backoff exponencial
 - RabbitMQ com CloudAMQP
+- Exchange do tipo `topic`
+- Filas e bindings por routing key
+- Consumer de mensagens
+- Console App para testar o consumo de eventos
 - Configuração com User Secrets
 - Swagger
 - CORS configurável
@@ -66,7 +72,11 @@ Infrastructure
  ├── PostgreSQL
  ├── Repositories
  ├── Outbox
+ ├── Background Services
  └── RabbitMQ
+
+ConsoleConsumer
+ └── Consome eventos publicados no RabbitMQ
 ```
 
 ## Fluxo
@@ -80,11 +90,35 @@ ExpenseRepository + OutboxStore
         ↓
 PostgreSQL
         ↓
-RabbitMQ
+OutboxPublisherBackgroundService
         ↓
-Worker
+OutboxProcessor
+        ↓
+RabbitMqPublisher
+        ↓
+Exchange + Queue
+        ↓
+Consumers
 ```
+
+A despesa e a mensagem do Outbox são salvas na mesma transação.
+
+Depois, o `OutboxPublisherBackgroundService` busca as mensagens pendentes e publica no RabbitMQ.
+
+Os consumidores recebem os eventos por meio de filas vinculadas ao exchange.
+
+## Console Consumer
+
+O projeto `EventDrivenArchitecturePlayground.ConsoleConsumer` simula outra aplicação interessada nos eventos publicados.
+
+Ele:
+
+- conecta-se ao mesmo RabbitMQ;
+- possui sua própria fila;
+- utiliza uma binding key compatível com a routing key publicada;
+- recebe uma cópia do evento;
+- confirma o processamento com ACK.
 
 ## Objetivo
 
-Praticar arquitetura orientada a eventos, DDD, Outbox Pattern, RabbitMQ e PostgreSQL.
+Praticar arquitetura orientada a eventos, DDD, Outbox Pattern, RabbitMQ, PostgreSQL e comunicação assíncrona entre aplicações.
