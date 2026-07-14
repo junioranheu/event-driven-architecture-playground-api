@@ -1,4 +1,5 @@
-﻿using EventDrivenArchitecturePlayground.Application.UseCases.Expenses.Create;
+﻿using EventDrivenArchitecturePlayground.Application.UseCases.Expenses.Commands.CreateExpense;
+using EventDrivenArchitecturePlayground.Application.UseCases.Expenses.Queries.GetExpenses;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace EventDrivenArchitecturePlayground.Application;
@@ -16,6 +17,7 @@ public static class DependencyInjection
     private static void AddUseCases(IServiceCollection services)
     {
         services.AddScoped<CreateExpenseHandler>();
+        services.AddScoped<GetExpensesHandler>();
     }
     #endregion
 }

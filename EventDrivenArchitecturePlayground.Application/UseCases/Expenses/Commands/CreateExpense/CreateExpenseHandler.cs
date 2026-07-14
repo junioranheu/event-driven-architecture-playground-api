@@ -5,7 +5,7 @@ using EventDrivenArchitecturePlayground.Domain.Entities;
 using EventDrivenArchitecturePlayground.Domain.Repositories;
 using static EventDrivenArchitecturePlayground.Utils.Fixtures.Get;
 
-namespace EventDrivenArchitecturePlayground.Application.UseCases.Expenses.Create;
+namespace EventDrivenArchitecturePlayground.Application.UseCases.Expenses.Commands.CreateExpense;
 
 /// <summary>
 /// Executa o caso de uso responsável pelo registro de uma nova despesa.
@@ -20,11 +20,11 @@ namespace EventDrivenArchitecturePlayground.Application.UseCases.Expenses.Create
 /// 7. Retorna o resultado
 /// </summary>
 public sealed class CreateExpenseHandler(
-    IExpenseRepository expenseRepository,
+    IExpenseWriteRepository expenseRepository,
     IOutboxStore outboxStore,
     IUnitOfWork unitOfWork)
 {
-    private readonly IExpenseRepository _expenseRepository = expenseRepository;
+    private readonly IExpenseWriteRepository _expenseRepository = expenseRepository;
     private readonly IOutboxStore _outboxStore = outboxStore;
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
 

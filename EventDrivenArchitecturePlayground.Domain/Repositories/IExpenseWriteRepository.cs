@@ -12,7 +12,7 @@ namespace EventDrivenArchitecturePlayground.Domain.Repositories;
 /// 
 /// Sendo assim, o domínio não depende de nenhuma tecnologia específica de persistência.
 /// </summary>
-public interface IExpenseRepository
+public interface IExpenseWriteRepository
 {
     Task AddAsync(Expense expense, CancellationToken cancellationToken = default);
 

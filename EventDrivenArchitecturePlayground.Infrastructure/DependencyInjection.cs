@@ -8,9 +8,10 @@ using EventDrivenArchitecturePlayground.Infrastructure.Messaging.RabbitMq.Projec
 using EventDrivenArchitecturePlayground.Infrastructure.Messaging.RabbitMq.Publisher;
 using EventDrivenArchitecturePlayground.Infrastructure.Persistence.Read;
 using EventDrivenArchitecturePlayground.Infrastructure.Persistence.Read.Options;
+using EventDrivenArchitecturePlayground.Infrastructure.Persistence.Read.Repositories;
 using EventDrivenArchitecturePlayground.Infrastructure.Persistence.Write;
 using EventDrivenArchitecturePlayground.Infrastructure.Persistence.Write.Options;
-using EventDrivenArchitecturePlayground.Infrastructure.Repositories;
+using EventDrivenArchitecturePlayground.Infrastructure.Persistence.Write.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -93,7 +94,8 @@ public static class DependencyInjection
     /// </summary>
     private static void AddRepositories(IServiceCollection services)
     {
-        services.AddScoped<IExpenseRepository, ExpenseRepository>();
+        services.AddScoped<IExpenseWriteRepository, ExpenseWriteRepository>();
+        services.AddScoped<IExpenseReadRepository, ExpenseReadRepository>();
     }
 
     /// <summary>

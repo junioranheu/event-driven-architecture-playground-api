@@ -1,11 +1,10 @@
 ﻿using EventDrivenArchitecturePlayground.Domain.Entities;
 using EventDrivenArchitecturePlayground.Domain.Repositories;
-using EventDrivenArchitecturePlayground.Infrastructure.Persistence.Write;
 using Microsoft.EntityFrameworkCore;
 
-namespace EventDrivenArchitecturePlayground.Infrastructure.Repositories;
+namespace EventDrivenArchitecturePlayground.Infrastructure.Persistence.Write.Repositories;
 
-public sealed class ExpenseRepository(ExpensesWriteDbContext dbContext) : IExpenseRepository
+public sealed class ExpenseWriteRepository(ExpensesWriteDbContext dbContext) : IExpenseWriteRepository
 {
     private readonly ExpensesWriteDbContext _dbContext = dbContext;
 

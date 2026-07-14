@@ -1,4 +1,4 @@
-﻿namespace EventDrivenArchitecturePlayground.Application.UseCases.Expenses.Create;
+﻿namespace EventDrivenArchitecturePlayground.Application.UseCases.Expenses.Commands.CreateExpense;
 
 /// <summary>
 /// Representa o resultado retornado após o registro de uma despesa.

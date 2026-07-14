@@ -1,12 +1,15 @@
 ﻿using EventDrivenArchitecturePlayground.API.Contracts.Expenses;
-using EventDrivenArchitecturePlayground.Application.UseCases.Expenses.Create;
+using EventDrivenArchitecturePlayground.Application.UseCases.Expenses.Commands.CreateExpense;
+using EventDrivenArchitecturePlayground.Application.UseCases.Expenses.Queries.GetExpenses;
 using Microsoft.AspNetCore.Mvc;
 
 namespace EventDrivenArchitecturePlayground.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public sealed class ExpensesController(CreateExpenseHandler createExpenseHandler) : BaseController<ExpensesController>
+public sealed class ExpensesController(
+    CreateExpenseHandler createExpenseHandler,
+    GetExpensesHandler getExpensesHandler) : BaseController<ExpensesController>
 {
     [HttpPost]
     [ProducesResponseType<CreateExpenseResult>(StatusCodes.Status201Created)]
@@ -26,5 +29,20 @@ public sealed class ExpensesController(CreateExpenseHandler createExpenseHandler
         // A publicação do evento é realizada de forma assíncrona pelo bacgrkound service <see cref="OutboxPublisherBackgroundService"/>,
         // que processa a Outbox e envia a mensagem ao broker.
         return Created(string.Empty, result);
+    }
+
+    /// <summary>
+    /// Retorna as despesas disponíveis no modelo
+    /// de leitura do CQRS.
+    /// </summary>
+    [HttpGet]
+    [ProducesResponseType<IReadOnlyList<GetExpensesResult>>(StatusCodes.Status200OK)]
+    public async Task<ActionResult<IReadOnlyList<GetExpensesResult>>> GetAllAsync(CancellationToken cancellationToken)
+    {
+        GetExpensesQuery query = new();
+
+        IReadOnlyList<GetExpensesResult> result = await getExpensesHandler.HandleAsync(query, cancellationToken);
+
+        return Ok(result);
     }
 }
