@@ -1,13 +1,13 @@
 ﻿using EventDrivenArchitecturePlayground.Domain.Entities;
 using EventDrivenArchitecturePlayground.Domain.Repositories;
-using EventDrivenArchitecturePlayground.Infrastructure.Persistence;
+using EventDrivenArchitecturePlayground.Infrastructure.Persistence.Write;
 using Microsoft.EntityFrameworkCore;
 
 namespace EventDrivenArchitecturePlayground.Infrastructure.Repositories;
 
-public sealed class ExpenseRepository(ExpensesDbContext dbContext) : IExpenseRepository
+public sealed class ExpenseRepository(ExpensesWriteDbContext dbContext) : IExpenseRepository
 {
-    private readonly ExpensesDbContext _dbContext = dbContext;
+    private readonly ExpensesWriteDbContext _dbContext = dbContext;
 
     public async Task AddAsync(Expense expense, CancellationToken cancellationToken = default)
     {

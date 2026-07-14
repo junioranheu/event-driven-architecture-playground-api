@@ -1,6 +1,6 @@
 ﻿using EventDrivenArchitecturePlayground.Domain.Entities;
-using EventDrivenArchitecturePlayground.Infrastructure.Messaging.RabbitMq;
-using EventDrivenArchitecturePlayground.Infrastructure.Persistence;
+using EventDrivenArchitecturePlayground.Infrastructure.Messaging.RabbitMq.Publisher;
+using EventDrivenArchitecturePlayground.Infrastructure.Persistence.Write;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -12,7 +12,7 @@ namespace EventDrivenArchitecturePlayground.Infrastructure.Messaging.Outbox;
 /// Busca mensagens pendentes no Outbox e as publica no RabbitMQ.
 /// </summary>
 public sealed class OutboxProcessor(
-    ExpensesDbContext dbContext,
+    ExpensesWriteDbContext dbContext,
     IRabbitMqPublisher rabbitMqPublisher,
     IOptions<OutboxPublisherOptions> options,
     ILogger<OutboxProcessor> logger)
@@ -57,7 +57,7 @@ public sealed class OutboxProcessor(
     {
         try
         {
-            // Tenta publicar a mensagem no RabbitMQ.
+            // #10 - Tenta publicar a mensagem no RabbitMQ.
             await rabbitMqPublisher.PublishAsync(
                 messageId: message.Id,
                 eventType: message.EventType,

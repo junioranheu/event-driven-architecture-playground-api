@@ -6,13 +6,14 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using System.Security.Claims;
 using static EventDrivenArchitecturePlayground.Utils.Fixtures.Get;
 
-namespace EventDrivenArchitecturePlayground.Infrastructure.Persistence;
+namespace EventDrivenArchitecturePlayground.Infrastructure.Persistence.Write;
 
 /// <summary>
-/// Representa a sessão do Entity Framework utilizada
-/// para acessar o banco de dados da aplicação.
+/// Representa o contexto de escrita da aplicação,
+/// responsável pelas operações de persistência de dados
+/// no banco de dados seguindo o padrão CQRS.
 /// </summary>
-public sealed class ExpensesDbContext(DbContextOptions<ExpensesDbContext> options, IHttpContextAccessor httpContextAccessor) : DbContext(options), IUnitOfWork
+public sealed class ExpensesWriteDbContext(DbContextOptions<ExpensesWriteDbContext> options, IHttpContextAccessor httpContextAccessor) : DbContext(options), IUnitOfWork
 {
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
     public DbSet<Expense> Expenses => Set<Expense>();

@@ -6,13 +6,13 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace EventDrivenArchitecturePlayground.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class AddNewEntitiesForEventDrivenPlayground : Migration
+    public partial class AddWriteDb : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
-                name: "Expenses",
+                name: "expenses",
                 columns: table => new
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -27,11 +27,11 @@ namespace EventDrivenArchitecturePlayground.Infrastructure.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Expenses", x => x.id);
+                    table.PrimaryKey("PK_expenses", x => x.id);
                 });
 
             migrationBuilder.CreateTable(
-                name: "OutboxMessages",
+                name: "outbox_messages",
                 columns: table => new
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -46,28 +46,28 @@ namespace EventDrivenArchitecturePlayground.Infrastructure.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_OutboxMessages", x => x.id);
+                    table.PrimaryKey("PK_outbox_messages", x => x.id);
                 });
 
             migrationBuilder.CreateIndex(
                 name: "ix_expenses_occurred_at",
-                table: "Expenses",
+                table: "expenses",
                 column: "occurred_at");
 
             migrationBuilder.CreateIndex(
-                name: "ix_outbox_messages_pending",
-                table: "OutboxMessages",
-                columns: new[] { "processed_at", "next_retry_at" });
+                name: "ix_outbox_messages_processed_at_occurred_on",
+                table: "outbox_messages",
+                columns: new[] { "processed_at", "occurred_on" });
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "Expenses");
+                name: "expenses");
 
             migrationBuilder.DropTable(
-                name: "OutboxMessages");
+                name: "outbox_messages");
         }
     }
 }

@@ -1,21 +1,28 @@
-﻿using Microsoft.Extensions.Hosting;
+﻿using EventDrivenArchitecturePlayground.Contracts.Events;
+using EventDrivenArchitecturePlayground.Infrastructure.Messaging.RabbitMq.Options;
+using EventDrivenArchitecturePlayground.Infrastructure.Messaging.RabbitMq.Projections;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using System.Text;
+using System.Text.Json;
 
-namespace EventDrivenArchitecturePlayground.Infrastructure.Messaging.RabbitMq;
+namespace EventDrivenArchitecturePlayground.Infrastructure.Messaging.RabbitMq.HostedService;
 
 /// <summary>
 /// Declara a fila da aplicação e consome as mensagens
 /// publicadas no exchange do RabbitMQ.
 /// </summary>
 public sealed class RabbitMqConsumerHostedService(
+    IServiceScopeFactory scopeFactory,
     IOptions<RabbitMqOptions> options,
     ILogger<RabbitMqConsumerHostedService> logger) : IHostedService, IAsyncDisposable
 {
     private readonly RabbitMqOptions _options = options.Value;
+    private static readonly JsonSerializerOptions _jsonOptions = new(JsonSerializerDefaults.Web);
 
     private IConnection? _connection;
     private IChannel? _channel;
@@ -71,15 +78,21 @@ public sealed class RabbitMqConsumerHostedService(
 
         consumer.ReceivedAsync += async (_, eventArgs) =>
         {
+            // #12 - Registra o comportamento que será executado sempre que
+            // uma nova mensagem for entregue pelo RabbitMQ ao consumer.
             byte[] body = eventArgs.Body.ToArray();
-
             string content = Encoding.UTF8.GetString(body);
 
             try
             {
-                // Por enquanto, apenas comprova que a mensagem
-                // foi recebida pelo consumidor.
                 // logger.LogInformation("RabbitMQ message received. Routing key: {RoutingKey}. Content: {Content}", eventArgs.RoutingKey, content);
+
+                // #13 - Identifica o tipo do evento pela routing key
+                // e direciona a mensagem para o respectivo processamento.
+                //
+                // Novos eventos podem ser adicionados dentro desse método,
+                // cada um com sua própria condição e handler.
+                await ProcessMessageAsync(eventArgs, content);
 
                 // Confirma o processamento e remove
                 // a mensagem da fila.
@@ -109,6 +122,45 @@ public sealed class RabbitMqConsumerHostedService(
         // logger.LogInformation("RabbitMQ consumer started. Queue: {QueueName}. Binding key: {BindingKey}.", _options.QueueName, _options.BindingKey);
     }
 
+    #region extras
+    /// <summary>
+    /// Identifica o evento recebido e executa
+    /// seu respectivo handler de projeção.
+    /// </summary>
+    private async Task ProcessMessageAsync(BasicDeliverEventArgs eventArgs, string content)
+    {
+        if (!Guid.TryParse(eventArgs.BasicProperties.MessageId, out Guid messageId))
+        {
+            throw new InvalidOperationException("RabbitMQ message does not contain a valid MessageId.");
+        }
+
+        // Converte o conteúdo JSON recebido do RabbitMQ
+        // novamente para o tipo concreto do evento.
+        //
+        // Caso o conteúdo seja inválido ou incompatível,
+        // interrompe o processamento para que a mensagem não receba ACK.
+        ExpenseCreatedIntegrationEvent integrationEvent =
+            JsonSerializer.Deserialize<ExpenseCreatedIntegrationEvent>(content, _jsonOptions) ??
+            throw new InvalidOperationException("ExpenseCreatedIntegrationEvent could not be deserialized.");
+
+        // Cria um escopo próprio para que o handler
+        // receba um ExpensesReadDbContext Scoped.
+        await using AsyncServiceScope scope = scopeFactory.CreateAsyncScope();
+
+        switch (eventArgs.RoutingKey)
+        {
+            case ExpenseCreatedIntegrationEvent.RoutingKey:
+                {
+                    ExpenseCreatedProjectionHandler handler = scope.ServiceProvider.GetRequiredService<ExpenseCreatedProjectionHandler>();
+                    await handler.HandleAsync(messageId, integrationEvent);
+                    break;
+                }
+
+            default:
+                throw new InvalidOperationException($"No projection handler was found for routing key '{eventArgs.RoutingKey}'.");
+        }
+    }
+
     public async Task StopAsync(CancellationToken cancellationToken)
     {
         await DisposeAsync();
@@ -128,4 +180,5 @@ public sealed class RabbitMqConsumerHostedService(
             _connection = null;
         }
     }
+    #endregion
 }

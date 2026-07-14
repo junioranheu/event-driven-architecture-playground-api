@@ -1,7 +1,7 @@
 ﻿using EventDrivenArchitecturePlayground.Application.Abstractions.Messaging;
 using EventDrivenArchitecturePlayground.Contracts.Abstractions;
 using EventDrivenArchitecturePlayground.Domain.Entities;
-using EventDrivenArchitecturePlayground.Infrastructure.Persistence;
+using EventDrivenArchitecturePlayground.Infrastructure.Persistence.Write;
 using System.Text.Json;
 
 namespace EventDrivenArchitecturePlayground.Infrastructure.Messaging.Outbox;
@@ -10,7 +10,7 @@ namespace EventDrivenArchitecturePlayground.Infrastructure.Messaging.Outbox;
 /// Implementa o armazenamento de eventos de integração
 /// utilizando o mesmo DbContext das entidades da aplicação.
 /// </summary>
-public sealed class OutboxStore(ExpensesDbContext dbContext) : IOutboxStore
+public sealed class OutboxStore(ExpensesWriteDbContext dbContext) : IOutboxStore
 {
     private static readonly JsonSerializerOptions SerializerOptions = new(JsonSerializerDefaults.Web);
 

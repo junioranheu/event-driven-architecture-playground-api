@@ -1,9 +1,10 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using EventDrivenArchitecturePlayground.Infrastructure.Messaging.RabbitMq.Options;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
 using System.Text;
 
-namespace EventDrivenArchitecturePlayground.Infrastructure.Messaging.RabbitMq;
+namespace EventDrivenArchitecturePlayground.Infrastructure.Messaging.RabbitMq.Publisher;
 
 /// <summary>
 /// Publica mensagens no RabbitMQ utilizando uma conexão
@@ -69,7 +70,7 @@ public sealed class RabbitMqPublisher(IOptions<RabbitMqOptions> options, ILogger
                 arguments: null,
                 cancellationToken: cancellationToken);
 
-            // Publica a mensagem e aguarda a confirmação do RabbitMQ.
+            // #11 - Publica a mensagem e aguarda a confirmação do RabbitMQ.
             await channel.BasicPublishAsync(
                 exchange: _options.ExchangeName,
                 routingKey: routingKey,

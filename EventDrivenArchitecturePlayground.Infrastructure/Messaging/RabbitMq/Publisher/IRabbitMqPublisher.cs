@@ -1,4 +1,4 @@
-﻿namespace EventDrivenArchitecturePlayground.Infrastructure.Messaging.RabbitMq;
+﻿namespace EventDrivenArchitecturePlayground.Infrastructure.Messaging.RabbitMq.Publisher;
 
 /// <summary>
 /// Define a publicação de mensagens no RabbitMQ.

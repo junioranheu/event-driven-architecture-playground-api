@@ -1,4 +1,4 @@
-﻿namespace EventDrivenArchitecturePlayground.Infrastructure.Messaging.RabbitMq;
+﻿namespace EventDrivenArchitecturePlayground.Infrastructure.Messaging.RabbitMq.Options;
 
 /// <summary>
 /// Representa as configurações utilizadas pelo RabbitMQ.

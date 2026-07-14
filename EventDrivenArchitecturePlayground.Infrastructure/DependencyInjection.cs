@@ -2,8 +2,14 @@
 using EventDrivenArchitecturePlayground.Application.Abstractions.Persistence;
 using EventDrivenArchitecturePlayground.Domain.Repositories;
 using EventDrivenArchitecturePlayground.Infrastructure.Messaging.Outbox;
-using EventDrivenArchitecturePlayground.Infrastructure.Messaging.RabbitMq;
-using EventDrivenArchitecturePlayground.Infrastructure.Persistence;
+using EventDrivenArchitecturePlayground.Infrastructure.Messaging.RabbitMq.HostedService;
+using EventDrivenArchitecturePlayground.Infrastructure.Messaging.RabbitMq.Options;
+using EventDrivenArchitecturePlayground.Infrastructure.Messaging.RabbitMq.Projections;
+using EventDrivenArchitecturePlayground.Infrastructure.Messaging.RabbitMq.Publisher;
+using EventDrivenArchitecturePlayground.Infrastructure.Persistence.Read;
+using EventDrivenArchitecturePlayground.Infrastructure.Persistence.Read.Options;
+using EventDrivenArchitecturePlayground.Infrastructure.Persistence.Write;
+using EventDrivenArchitecturePlayground.Infrastructure.Persistence.Write.Options;
 using EventDrivenArchitecturePlayground.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -35,35 +41,51 @@ public static class DependencyInjection
     /// </summary>
     private static void AddPersistence(IServiceCollection services, IConfiguration configuration)
     {
-        // Mapeia a seção PostgreSql para PostgreSqlOptions
-        // e valida a connection string durante a inicialização.
-        services.AddOptions<PostgreSqlOptions>().
-            Bind(configuration.GetSection(PostgreSqlOptions.SectionName)).
-            Validate(x => IsValidPostgreSqlConnectionString(x.ConnectionString), "PostgreSql:ConnectionString must be a valid PostgreSQL connection string.").
+        // Mapeia e valida as configurações do PostgreSQL
+        // utilizado pelo lado de escrita da aplicação.
+        services.AddOptions<PostgreSqlWriteOptions>().
+            Bind(configuration.GetSection(PostgreSqlWriteOptions.SectionName)).
+            Validate(x => IsValidPostgreSqlConnectionString(x.ConnectionString), "PostgreSqlWrite:ConnectionString must be a valid PostgreSQL connection string.").
             ValidateOnStart();
 
-        // Registra o ExpensesDbContext como Scoped.
-        // Uma nova instância será criada por requisição HTTP
-        // ou por escopo criado pelo BackgroundService.
-        services.AddDbContext<ExpensesDbContext>((serviceProvider, dbContextOptions) =>
-        {
-            // Obtém as configurações tipadas e já validadas
-            // do PostgreSQL pelo container de dependências.
-            PostgreSqlOptions postgreSqlOptions = serviceProvider.GetRequiredService<IOptions<PostgreSqlOptions>>().Value;
+        // Mapeia e valida as configurações do PostgreSQL
+        // que será utilizado pelo lado de leitura do CQRS.
+        services.AddOptions<PostgreSqlReadOptions>().
+            Bind(configuration.GetSection(PostgreSqlReadOptions.SectionName)).
+            Validate(x => IsValidPostgreSqlConnectionString(x.ConnectionString), "PostgreSqlRead:ConnectionString must be a valid PostgreSQL connection string.").
+            ValidateOnStart();
 
-            // Configura o Entity Framework Core para utilizar
-            // o PostgreSQL por meio do provider Npgsql.
+        // Banco de escrita: entidades de domínio e Outbox.
+        services.AddDbContext<ExpensesWriteDbContext>((serviceProvider, dbContextOptions) =>
+        {
+            PostgreSqlWriteOptions postgreSqlOptions = serviceProvider.GetRequiredService<IOptions<PostgreSqlWriteOptions>>().Value;
+
             dbContextOptions.UseNpgsql(
                 connectionString: postgreSqlOptions.ConnectionString,
                 npgsqlOptionsAction: npgsqlOptions =>
                 {
-                    npgsqlOptions.MigrationsAssembly(typeof(ExpensesDbContext).Assembly.FullName);
+                    npgsqlOptions.MigrationsAssembly(typeof(ExpensesWriteDbContext).Assembly.FullName);
                 });
         });
 
-        // Faz IUnitOfWork apontar para a mesma instância Scoped
-        // de ExpensesDbContext já criada no escopo atual.
-        services.AddScoped<IUnitOfWork>(x => x.GetRequiredService<ExpensesDbContext>());
+        // Banco de leitura: modelos otimizados para consultas.
+        services.AddDbContext<ExpensesReadDbContext>(
+        (serviceProvider, dbContextOptions) =>
+        {
+            PostgreSqlReadOptions postgreSqlOptions = serviceProvider.GetRequiredService<IOptions<PostgreSqlReadOptions>>().Value;
+
+            dbContextOptions.UseNpgsql(
+                connectionString: postgreSqlOptions.ConnectionString,
+                npgsqlOptionsAction: npgsqlOptions =>
+                {
+                    npgsqlOptions.MigrationsAssembly(typeof(ExpensesReadDbContext).Assembly.FullName);
+                });
+        });
+
+
+        // Faz o IUnitOfWork utilizar a mesma instância Scoped
+        // do ExpensesDbContext usada pelos repositories e OutboxStore.
+        services.AddScoped<IUnitOfWork>(x => x.GetRequiredService<ExpensesWriteDbContext>());
     }
 
     /// <summary>
@@ -117,6 +139,9 @@ public static class DependencyInjection
 
         // Consulta o Outbox e publica mensagens pendentes.
         services.AddHostedService<OutboxPublisherBackgroundService>();
+
+        // Aplica eventos de criação de despesas ao banco de leitura do CQRS.
+        services.AddScoped<ExpenseCreatedProjectionHandler>();
     }
 
     /// <summary>

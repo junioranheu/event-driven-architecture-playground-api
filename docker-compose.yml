@@ -1,0 +1,99 @@
+services:
+  # Serviço do banco de dados responsável pelas operações de escrita (INSERT, UPDATE, DELETE)
+  postgres-write:
+    # Imagem oficial do PostgreSQL versão 18.4 baseada em Alpine (mais leve)
+    image: postgres:18.4-alpine
+
+    # Nome fixo que o container terá no Docker
+    container_name: expenses-postgres-write
+
+    # Reinicia automaticamente o container caso ele pare inesperadamente
+    restart: unless-stopped
+
+    # Variáveis de ambiente utilizadas para configurar o PostgreSQL
+    environment:
+      # Nome do banco que será criado automaticamente
+      POSTGRES_DB: expenses_write
+
+      # Usuário administrador do banco
+      POSTGRES_USER: postgres
+
+      # Senha do usuário
+      POSTGRES_PASSWORD: postgres
+
+    # Mapeamento de portas
+    # Porta 5433 da máquina -> porta 5432 do container
+    ports:
+      - "5433:5432"
+
+    # Volume persistente para que os dados não sejam perdidos ao remover o container
+    volumes:
+      - postgres_write_data:/var/lib/postgresql
+
+    # Verifica se o banco está pronto para receber conexões
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          # Executa o pg_isready para verificar se o PostgreSQL está disponível
+          "pg_isready -U postgres -d expenses_write"
+        ]
+
+      # Intervalo entre cada verificação
+      interval: 5s
+
+      # Tempo máximo que cada teste pode levar
+      timeout: 5s
+
+      # Quantas falhas consecutivas são permitidas antes do container ser considerado unhealthy
+      retries: 10
+
+  # Serviço do banco responsável apenas pelas consultas (SELECT)
+  postgres-read:
+    # Mesma imagem do PostgreSQL
+    image: postgres:18.4-alpine
+
+    # Nome do container
+    container_name: expenses-postgres-read
+
+    # Reinicia automaticamente
+    restart: unless-stopped
+
+    # Configuração inicial do banco
+    environment:
+      # Banco criado automaticamente
+      POSTGRES_DB: expenses_read
+
+      # Usuário administrador
+      POSTGRES_USER: postgres
+
+      # Senha
+      POSTGRES_PASSWORD: postgres
+
+    # Porta 5434 da máquina -> porta 5432 do container
+    ports:
+      - "5434:5432"
+
+    # Volume separado para manter os dados desse banco
+    volumes:
+      - postgres_read_data:/var/lib/postgresql
+
+    # Verifica se o banco está pronto
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U postgres -d expenses_read"
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+
+# Declaração dos volumes persistentes utilizados pelos bancos
+volumes:
+  # Volume do banco de escrita
+  postgres_write_data:
+
+  # Volume do banco de leitura
+  postgres_read_data:
